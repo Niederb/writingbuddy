@@ -136,6 +136,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                 Constraint::Length(1),
                 Constraint::Length(3),
                 Constraint::Min(1),
+                Constraint::Length(3),
             ]
             .as_ref(),
         )
@@ -195,4 +196,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .block(Block::default().borders(Borders::ALL).title("Title"))
         .wrap(Wrap { trim: true });
     f.render_widget(messages, chunks[2]);
+
+    let word_count = app.text.split_whitespace().count();
+    let stats = Paragraph::new(format!("Word count: {word_count}"))
+        .style(Style::default().fg(Color::Yellow))
+        .block(Block::default().borders(Borders::ALL).title("Statistics"))
+        .wrap(Wrap { trim: true });
+    f.render_widget(stats, chunks[3]);
 }
