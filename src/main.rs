@@ -2,7 +2,7 @@ use chrono::{Datelike, Utc};
 use config::Config;
 use std::fs::OpenOptions;
 use std::io;
-use std::io::{Write};
+use std::io::Write;
 
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -181,7 +181,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             f.set_cursor(
                 // Put cursor past the end of the input text
-                chunks[2].x + app.text.lines().last().unwrap_or_default().len() as u16 + 1,
+                chunks[2].x
+                    + app.text.lines().last().unwrap_or_default().chars().count() as u16
+                    + 1,
                 // Move one line down, from the border to the input line
                 chunks[2].y + max(1, app.text.lines().count() as u16),
             )
