@@ -17,5 +17,6 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 chrono = "0.4"
-crossterm = "0.22.1"
 config = "0.11"
+tui = { version = "0.16", default-features = false, features = ['crossterm'] }
+crossterm = "0.22"
