@@ -27,8 +27,9 @@ enum InputMode {
 
 /// App holds the state of the application
 struct App {
+    /// Current value of the title box
     title: String,
-    /// Current value of the input box
+    /// Current value of the text box
     text: String,
     /// Current input mode
     input_mode: InputMode,
@@ -65,7 +66,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|_| "%Y-%m.md".to_string());
     let filename = now.format(&file_format_str);
 
-    // create app and run it
     let mut app = App::new(title.to_string());
     let res = run_app(&mut terminal, &mut app);
 
@@ -183,16 +183,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     f.render_widget(title, chunks[1]);
     match app.input_mode {
         InputMode::Title => {
-            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
             f.set_cursor(
-                // Put cursor past the end of the input text
+                // Put cursor past the end of the title text
                 chunks[1].x + app.title.chars().count() as u16 + 1,
-                // Move one line down, from the border to the input line
+                // Move one line down, from the border to the title line
                 chunks[1].y + 1,
             )
         }
         InputMode::Writing => {
-            // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             f.set_cursor(
                 // Put cursor past the end of the input text
                 chunks[2].x
