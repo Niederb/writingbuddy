@@ -21,8 +21,8 @@ use tui::{
 };
 
 enum InputMode {
-    Normal,
-    Editing,
+    Title,
+    Writing,
 }
 
 /// App holds the state of the application
@@ -39,7 +39,7 @@ impl App {
         App {
             title,
             text: String::default(),
-            input_mode: InputMode::Normal,
+            input_mode: InputMode::Title,
         }
     }
 }
@@ -104,18 +104,23 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
 
         if let Event::Key(key) = event::read()? {
             match app.input_mode {
-                InputMode::Normal => match key.code {
-                    KeyCode::Char('e') => {
-                        app.input_mode = InputMode::Editing;
+                InputMode::Title => match key.code {
+                    KeyCode::Enter => {
+                        app.input_mode = InputMode::Writing;
                     }
-                    KeyCode::Char('q') => {
+                    KeyCode::Esc => {
                         return Ok(());
+                    }
+                    KeyCode::Char(c) => {
+                        app.title.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        app.title.pop();
                     }
                     _ => {}
                 },
-                InputMode::Editing => match key.code {
+                InputMode::Writing => match key.code {
                     KeyCode::Enter => {
-                        //app.messages.push(app.input.drain(..).collect());
                         app.text.push('\n')
                     }
                     KeyCode::Char(c) => {
@@ -125,7 +130,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         app.text.pop();
                     }
                     KeyCode::Esc => {
-                        app.input_mode = InputMode::Normal;
+                        app.input_mode = InputMode::Title;
                     }
                     _ => {}
                 },
@@ -150,23 +155,21 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(f.size());
 
     let (msg, style) = match app.input_mode {
-        InputMode::Normal => (
-            vec![
-                Span::raw("Press "),
-                Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to exit, "),
-                Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to start editing."),
-            ],
-            Style::default().add_modifier(Modifier::RAPID_BLINK),
-        ),
-        InputMode::Editing => (
+        InputMode::Title => (
             vec![
                 Span::raw("Press "),
                 Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to stop editing, "),
+                Span::raw(" to exit, "),
                 Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to record the message"),
+                Span::raw(" to start writing."),
+            ],
+            Style::default().add_modifier(Modifier::RAPID_BLINK),
+        ),
+        InputMode::Writing => (
+            vec![
+                Span::raw("Press "),
+                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to stop writing"),
             ],
             Style::default(),
         ),
@@ -181,11 +184,18 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(title, chunks[1]);
     match app.input_mode {
-        InputMode::Normal =>
+        InputMode::Title => {
             // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
-            {}
-
-        InputMode::Editing => {
+            f.set_cursor(
+                // Put cursor past the end of the input text
+                chunks[1].x
+                    + app.title.chars().count() as u16
+                    + 1,
+                // Move one line down, from the border to the input line
+                chunks[1].y + 1,
+            )
+        },
+        InputMode::Writing => {
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             f.set_cursor(
                 // Put cursor past the end of the input text
