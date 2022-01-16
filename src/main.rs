@@ -1,4 +1,4 @@
-use chrono::{Datelike, Utc};
+use chrono::Utc;
 use config::Config;
 use std::fs::OpenOptions;
 use std::io;
@@ -52,10 +52,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    let mut settings = Config::default();
+    settings.merge(config::File::with_name("config")).unwrap();
+
     let now = Utc::now();
-    let title = format!("{}-{:02}-{:02}", now.year(), now.month(), now.day());
+    let title_format_str = settings
+        .get_str("title_string")
+        .unwrap_or_else(|_| "%Y-%m-%d".to_string());
+    let title = now.format(&title_format_str);
+    let file_format_str = settings
+        .get_str("file_string")
+        .unwrap_or_else(|_| "%Y-%m.md".to_string());
+    let filename = now.format(&file_format_str);
+
     // create app and run it
-    let mut app = App::new(title);
+    let mut app = App::new(title.to_string());
     let res = run_app(&mut terminal, &mut app);
 
     // restore terminal
@@ -67,22 +78,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     terminal.show_cursor()?;
 
-    let mut settings = Config::default();
-    settings.merge(config::File::with_name("config")).unwrap();
-
-    let folder = settings.get_str("folder").unwrap();
-    let now = Utc::now();
-    let filename = format!("{}/{}-{:02}.md", folder, now.year(), now.month());
-    println!("Storing text into: {}", &filename);
-    let mut output = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .create(true)
-        .open(&filename)
-        .unwrap();
-    writeln!(output, "## {}", app.title)?;
-    writeln!(output, "{}", app.text)?;
-    writeln!(output)?;
+    if !app.text.is_empty() {
+        println!("Storing text into: {}", &filename);
+        let mut output = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open(&filename.to_string())
+            .unwrap();
+        writeln!(output, "## {}", app.title)?;
+        writeln!(output, "{}", app.text)?;
+        writeln!(output)?;
+    }
 
     if let Err(err) = res {
         println!("{:?}", err)
