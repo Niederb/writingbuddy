@@ -33,14 +33,17 @@ struct App {
     text: String,
     /// Current input mode
     input_mode: InputMode,
+    /// Whether the backspace key works while writing
+    backspace_active: bool,
 }
 
 impl App {
-    fn new(title: String) -> App {
+    fn new(title: String, backspace_active: bool) -> App {
         App {
             title,
             text: String::default(),
             input_mode: InputMode::Title,
+            backspace_active,
         }
     }
 }
@@ -79,8 +82,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .get_str("file_string")
         .unwrap_or_else(|_| "%Y-%m.md".to_string());
     let filename = now.format(&file_format_str);
+    let backspace_active = settings.get_bool("backspace_active").unwrap_or(true);
 
-    let mut app = App::new(title.to_string());
+    let mut app = App::new(title.to_string(), backspace_active);
     let res = run_app(&mut terminal, &mut app);
 
     // restore terminal
@@ -139,7 +143,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         app.text.push(c);
                     }
                     KeyCode::Backspace => {
-                        app.text.pop();
+                        if app.backspace_active {
+                            app.text.pop();
+                        }
                     }
                     KeyCode::Esc => {
                         app.input_mode = InputMode::Title;

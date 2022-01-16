@@ -1,0 +1,11 @@
+# Filename and path in which to store the written text
+# Default: "%Y-%m.md"
+file_string = "%Y-%m.md"
+
+# Default title to propose for a new text
+# Default: "%Y-%m-%d"
+title_string = "%Y-%m-%d"
+
+# Whether or not the backspace key is enabled while writing
+# Default: true
+backspace_active = true
