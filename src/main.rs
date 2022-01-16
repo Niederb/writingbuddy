@@ -120,9 +120,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                     _ => {}
                 },
                 InputMode::Writing => match key.code {
-                    KeyCode::Enter => {
-                        app.text.push('\n')
-                    }
+                    KeyCode::Enter => app.text.push('\n'),
                     KeyCode::Char(c) => {
                         app.text.push(c);
                     }
@@ -188,13 +186,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
             f.set_cursor(
                 // Put cursor past the end of the input text
-                chunks[1].x
-                    + app.title.chars().count() as u16
-                    + 1,
+                chunks[1].x + app.title.chars().count() as u16 + 1,
                 // Move one line down, from the border to the input line
                 chunks[1].y + 1,
             )
-        },
+        }
         InputMode::Writing => {
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             f.set_cursor(
