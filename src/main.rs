@@ -45,6 +45,20 @@ impl App {
     }
 }
 
+fn get_text_position(text: &str) -> (u16, u16) {
+    let last_line = text.lines().last().unwrap_or_default();
+    let last_line_offset = if text.ends_with('\n') { 1 } else { 0 };
+    let line_position = if last_line_offset == 1 {
+        0
+    } else {
+        last_line.chars().count() as u16
+    };
+    (
+        line_position,
+        max(1, text.lines().count() + last_line_offset) as u16,
+    )
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
@@ -181,6 +195,19 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .style(Style::default().fg(Color::Yellow))
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(title, chunks[1]);
+
+    let terminal_width = f.size().width as usize - 6;
+    let mut wrapped_text = textwrap::fill(&app.text, terminal_width);
+
+    let trailing_whitespace = &app.text[app.text.trim_end_matches(' ').len()..];
+    if !trailing_whitespace.is_empty() {
+        // Trailing whitespace is discarded by
+        // `textwrap::wrap`. We reinsert it here. If multiple
+        // spaces are added, this can overflow the margins
+        // which look a bit odd. Handling this would require
+        // some more tinkering...
+        wrapped_text = format!("{}{}", wrapped_text, trailing_whitespace);
+    }
     match app.input_mode {
         InputMode::Title => {
             f.set_cursor(
@@ -191,21 +218,19 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             )
         }
         InputMode::Writing => {
+            let text_position = get_text_position(&wrapped_text);
             f.set_cursor(
                 // Put cursor past the end of the input text
-                chunks[2].x
-                    + app.text.lines().last().unwrap_or_default().chars().count() as u16
-                    + 1,
+                chunks[2].x + 1 + text_position.0,
                 // Move one line down, from the border to the input line
-                chunks[2].y + max(1, app.text.lines().count() as u16),
+                chunks[2].y + text_position.1,
             )
         }
     }
 
-    let messages = Paragraph::new(app.text.as_ref())
+    let messages = Paragraph::new(wrapped_text)
         .style(Style::default().fg(Color::Yellow))
-        .block(Block::default().borders(Borders::ALL).title("Title"))
-        .wrap(Wrap { trim: true });
+        .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(messages, chunks[2]);
 
     let word_count = app.text.split_whitespace().count();

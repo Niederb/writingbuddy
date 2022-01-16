@@ -20,3 +20,4 @@ chrono = "0.4"
 config = "0.11"
 tui = { version = "0.16", default-features = false, features = ['crossterm'] }
 crossterm = "0.22"
+textwrap = "0.14.2"
