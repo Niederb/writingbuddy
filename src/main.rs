@@ -11,6 +11,7 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
+use structopt::StructOpt;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
@@ -19,6 +20,15 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
 };
+
+/// A basic example
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct CliConfig {
+    /// Path to config file. Can be a JSON, TOML, YAML, HJSON or INI file.
+    #[structopt(short, long)]
+    config_file: Option<String>,
+}
 
 enum InputMode {
     Title,
@@ -63,15 +73,17 @@ fn get_text_position(text: &str) -> (u16, u16) {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let cli_config = CliConfig::from_args();
+    let config_file = cli_config
+        .config_file
+        .unwrap_or_else(|| "config".to_string());
+    println!("Config file: {:#?}", config_file);
 
     let mut settings = Config::default();
-    settings.merge(config::File::with_name("config")).unwrap();
+    if let Err(i) = settings.merge(config::File::with_name(&config_file)) {
+        println!("Failed loading config file {:?}!", i);
+        std::process::exit(1);
+    }
 
     let now = Utc::now();
     let title_format_str = settings
@@ -83,6 +95,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|_| "%Y-%m.md".to_string());
     let filename = now.format(&file_format_str);
     let backspace_active = settings.get_bool("backspace_active").unwrap_or(true);
+
+    // setup terminal
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new(title.to_string(), backspace_active);
     let res = run_app(&mut terminal, &mut app);

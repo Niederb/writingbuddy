@@ -1,6 +1,6 @@
 [package]
 name = "writingbuddy"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Thomas Niederberger <thomas@niederb.ch>"]
 edition = "2021"
 
@@ -21,3 +21,4 @@ config = "0.11"
 tui = { version = "0.16", default-features = false, features = ['crossterm'] }
 crossterm = "0.22"
 textwrap = "0.14.2"
+structopt = "0.3.25"
