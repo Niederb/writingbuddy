@@ -216,8 +216,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let help_message = Paragraph::new(text);
     f.render_widget(help_message, chunks[0]);
 
+    let widget_colors = match app.input_mode {
+        InputMode::Title => (Color::Yellow, Color::DarkGray),
+        InputMode::Writing => (Color::DarkGray, Color::Yellow),
+    };
+
     let title = Paragraph::new(app.title.clone())
-        .style(Style::default().fg(Color::Yellow))
+        .style(Style::default().fg(widget_colors.0))
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(title, chunks[1]);
 
@@ -253,14 +258,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         }
     }
 
-    let messages = Paragraph::new(wrapped_text)
-        .style(Style::default().fg(Color::Yellow))
+    let text = Paragraph::new(wrapped_text)
+        .style(Style::default().fg(widget_colors.1))
         .block(Block::default().borders(Borders::ALL).title("Title"));
-    f.render_widget(messages, chunks[2]);
+    f.render_widget(text, chunks[2]);
 
     let word_count = app.text.split_whitespace().count();
     let stats = Paragraph::new(format!("Word count: {word_count}"))
-        .style(Style::default().fg(Color::Yellow))
+        .style(Style::default().fg(Color::DarkGray))
         .block(Block::default().borders(Borders::ALL).title("Statistics"))
         .wrap(Wrap { trim: true });
     f.render_widget(stats, chunks[3]);
