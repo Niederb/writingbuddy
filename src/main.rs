@@ -70,16 +70,16 @@ impl App {
     fn get_word_count_string(&self) -> String {
         let word_count = self.text.split_whitespace().count();
         match self.word_goal {
-            Some(word_goal) => format!("Word count: {word_count}/{word_goal}"),
-            None => format!("Word count: {word_count}"),
+            Some(word_goal) => format!("{word_count}/{word_goal}"),
+            None => format!("{word_count}"),
         }
     }
 
     fn get_time_string(&self) -> String {
         let duration = self.start_time.elapsed().as_secs();
         match self.time_goal {
-            Some(time_goal) => format!("Time: {duration}/{time_goal}"),
-            None => format!("Time: {duration}"),
+            Some(time_goal) => format!("{duration} s/{time_goal} s"),
+            None => format!("{duration} s"),
         }
     }
 }
@@ -298,13 +298,24 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let text = Paragraph::new(wrapped_text)
         .style(Style::default().fg(widget_colors.1))
-        .block(Block::default().borders(Borders::ALL).title("Title"));
+        .block(Block::default().borders(Borders::ALL).title("Text"));
     f.render_widget(text, chunks[2]);
 
-    let stats = format!("{} {}", app.get_word_count_string(), app.get_time_string());
-    let stats = Paragraph::new(stats)
-        .style(Style::default().fg(Color::DarkGray))
-        .block(Block::default().borders(Borders::ALL).title("Statistics"))
-        .wrap(Wrap { trim: true });
-    f.render_widget(stats, chunks[3]);
+    let stat_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .split(chunks[3]);
+    {
+        let stats = Paragraph::new(app.get_word_count_string())
+            .style(Style::default().fg(Color::DarkGray))
+            .block(Block::default().borders(Borders::ALL).title("Word count"))
+            .wrap(Wrap { trim: true });
+        f.render_widget(stats, stat_chunks[0]);
+
+        let stats = Paragraph::new(app.get_time_string())
+            .style(Style::default().fg(Color::DarkGray))
+            .block(Block::default().borders(Borders::ALL).title("Time"))
+            .wrap(Wrap { trim: true });
+        f.render_widget(stats, stat_chunks[1]);
+    }
 }
