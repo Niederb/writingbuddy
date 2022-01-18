@@ -92,8 +92,8 @@ impl App {
                 } else {
                     Color::Yellow
                 }
-            },
-            None => Color::DarkGray
+            }
+            None => Color::DarkGray,
         }
     }
 
@@ -106,8 +106,8 @@ impl App {
                 } else {
                     Color::Yellow
                 }
-            },
-            None => Color::DarkGray
+            }
+            None => Color::DarkGray,
         }
     }
 }
