@@ -82,6 +82,34 @@ impl App {
             None => format!("{duration} s"),
         }
     }
+
+    fn get_time_color(&self) -> Color {
+        let duration = self.start_time.elapsed().as_secs();
+        match self.time_goal {
+            Some(i) => {
+                if duration as i64 >= i {
+                    Color::Green
+                } else {
+                    Color::Yellow
+                }
+            },
+            None => Color::DarkGray
+        }
+    }
+
+    fn get_word_count_color(&self) -> Color {
+        let word_count = self.text.split_whitespace().count();
+        match self.word_goal {
+            Some(i) => {
+                if word_count as i64 >= i {
+                    Color::Green
+                } else {
+                    Color::Yellow
+                }
+            },
+            None => Color::DarkGray
+        }
+    }
 }
 
 fn get_text_position(text: &str) -> (u16, u16) {
@@ -307,13 +335,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(chunks[3]);
     {
         let stats = Paragraph::new(app.get_word_count_string())
-            .style(Style::default().fg(Color::DarkGray))
+            .style(Style::default().fg(app.get_word_count_color()))
             .block(Block::default().borders(Borders::ALL).title("Word count"))
             .wrap(Wrap { trim: true });
         f.render_widget(stats, stat_chunks[0]);
 
         let stats = Paragraph::new(app.get_time_string())
-            .style(Style::default().fg(Color::DarkGray))
+            .style(Style::default().fg(app.get_time_color()))
             .block(Block::default().borders(Borders::ALL).title("Time"))
             .wrap(Wrap { trim: true });
         f.render_widget(stats, stat_chunks[1]);
