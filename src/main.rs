@@ -11,6 +11,7 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
+use std::time::{Duration, Instant};
 use structopt::StructOpt;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -45,6 +46,12 @@ struct App {
     input_mode: InputMode,
     /// Whether the backspace key works while writing
     backspace_active: bool,
+
+    start_time: Instant,
+
+    time_goal: Option<i64>,
+
+    word_goal: Option<i64>,
 }
 
 impl App {
@@ -54,6 +61,25 @@ impl App {
             text: String::default(),
             input_mode: InputMode::Title,
             backspace_active,
+            time_goal: None,
+            word_goal: None,
+            start_time: Instant::now(),
+        }
+    }
+
+    fn get_word_count_string(&self) -> String {
+        let word_count = self.text.split_whitespace().count();
+        match self.word_goal {
+            Some(word_goal) => format!("Word count: {word_count}/{word_goal}"),
+            None => format!("Word count: {word_count}"),
+        }
+    }
+
+    fn get_time_string(&self) -> String {
+        let duration = self.start_time.elapsed().as_secs();
+        match self.time_goal {
+            Some(time_goal) => format!("Time: {duration}/{time_goal}"),
+            None => format!("Time: {duration}"),
         }
     }
 }
@@ -95,6 +121,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|_| "%Y-%m.md".to_string());
     let filename = now.format(&file_format_str);
     let backspace_active = settings.get_bool("backspace_active").unwrap_or(true);
+    let mut time_goal = settings.get_int("time_goal").ok();
+    if let Some(0) = time_goal {
+        time_goal = None;
+    }
+    let mut word_goal = settings.get_int("word_goal").ok();
+    if let Some(0) = word_goal {
+        word_goal = None;
+    }
 
     // setup terminal
     enable_raw_mode()?;
@@ -104,6 +138,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new(title.to_string(), backspace_active);
+    app.time_goal = time_goal;
+    app.word_goal = word_goal;
     let res = run_app(&mut terminal, &mut app);
 
     // restore terminal
@@ -139,38 +175,40 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
     loop {
         terminal.draw(|f| ui(f, app))?;
 
-        if let Event::Key(key) = event::read()? {
-            match app.input_mode {
-                InputMode::Title => match key.code {
-                    KeyCode::Enter => {
-                        app.input_mode = InputMode::Writing;
-                    }
-                    KeyCode::Esc => {
-                        return Ok(());
-                    }
-                    KeyCode::Char(c) => {
-                        app.title.push(c);
-                    }
-                    KeyCode::Backspace => {
-                        app.title.pop();
-                    }
-                    _ => {}
-                },
-                InputMode::Writing => match key.code {
-                    KeyCode::Enter => app.text.push('\n'),
-                    KeyCode::Char(c) => {
-                        app.text.push(c);
-                    }
-                    KeyCode::Backspace => {
-                        if app.backspace_active {
-                            app.text.pop();
+        if event::poll(Duration::from_millis(200))? {
+            if let Event::Key(key) = event::read()? {
+                match app.input_mode {
+                    InputMode::Title => match key.code {
+                        KeyCode::Enter => {
+                            app.input_mode = InputMode::Writing;
                         }
-                    }
-                    KeyCode::Esc => {
-                        app.input_mode = InputMode::Title;
-                    }
-                    _ => {}
-                },
+                        KeyCode::Esc => {
+                            return Ok(());
+                        }
+                        KeyCode::Char(c) => {
+                            app.title.push(c);
+                        }
+                        KeyCode::Backspace => {
+                            app.title.pop();
+                        }
+                        _ => {}
+                    },
+                    InputMode::Writing => match key.code {
+                        KeyCode::Enter => app.text.push('\n'),
+                        KeyCode::Char(c) => {
+                            app.text.push(c);
+                        }
+                        KeyCode::Backspace => {
+                            if app.backspace_active {
+                                app.text.pop();
+                            }
+                        }
+                        KeyCode::Esc => {
+                            app.input_mode = InputMode::Title;
+                        }
+                        _ => {}
+                    },
+                }
             }
         }
     }
@@ -263,8 +301,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(text, chunks[2]);
 
-    let word_count = app.text.split_whitespace().count();
-    let stats = Paragraph::new(format!("Word count: {word_count}"))
+    let stats = format!("{} {}", app.get_word_count_string(), app.get_time_string());
+    let stats = Paragraph::new(stats)
         .style(Style::default().fg(Color::DarkGray))
         .block(Block::default().borders(Borders::ALL).title("Statistics"))
         .wrap(Wrap { trim: true });

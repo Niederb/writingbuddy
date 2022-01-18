@@ -9,3 +9,11 @@ title_string = "%Y-%m-%d"
 # Whether or not the backspace key is enabled while writing
 # Default: true
 backspace_active = true
+
+# How many words you want to write
+# Default: 0
+goal_words = 75
+
+# Amount of time in seconds you want to spend writing
+# Default: 0
+goal_time = 60
