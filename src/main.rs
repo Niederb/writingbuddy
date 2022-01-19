@@ -11,7 +11,8 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use stopwatch::Stopwatch;
 use structopt::StructOpt;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -47,7 +48,7 @@ struct App {
     /// Whether the backspace key works while writing
     backspace_active: bool,
 
-    start_time: Instant,
+    writing_time: Stopwatch,
 
     time_goal: Option<i64>,
 
@@ -71,7 +72,7 @@ impl App {
             backspace_active,
             time_goal,
             word_goal,
-            start_time: Instant::now(),
+            writing_time: Stopwatch::new(),
             strict_mode,
         }
     }
@@ -85,7 +86,7 @@ impl App {
     }
 
     fn get_time_string(&self) -> String {
-        let duration = self.start_time.elapsed().as_secs();
+        let duration = self.writing_time.elapsed().as_secs();
         match self.time_goal {
             Some(time_goal) => format!("{duration} s/{time_goal} s"),
             None => format!("{duration} s"),
@@ -93,7 +94,7 @@ impl App {
     }
 
     fn get_time_color(&self) -> Color {
-        let duration = self.start_time.elapsed().as_secs();
+        let duration = self.writing_time.elapsed().as_secs();
         match self.time_goal {
             Some(i) => {
                 if duration as i64 >= i {
@@ -126,7 +127,7 @@ impl App {
             None => true,
         };
         let time_goal_achieved = match self.time_goal {
-            Some(i) => self.start_time.elapsed().as_secs() as i64 >= i,
+            Some(i) => self.writing_time.elapsed().as_secs() as i64 >= i,
             None => true,
         };
         word_goal_achieved && time_goal_achieved
@@ -255,6 +256,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                 match app.input_mode {
                     InputMode::Title => match key.code {
                         KeyCode::Enter => {
+                            app.writing_time.start();
                             app.input_mode = InputMode::Writing;
                         }
                         KeyCode::Esc => {
@@ -280,6 +282,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         }
                         KeyCode::Esc => {
                             if app.achieved_goals() || !app.strict_mode {
+                                app.writing_time.stop();
                                 app.input_mode = InputMode::Title;
                             }
                         }
