@@ -5,7 +5,7 @@ use std::io;
 use std::io::Write;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -52,18 +52,27 @@ struct App {
     time_goal: Option<i64>,
 
     word_goal: Option<i64>,
+
+    strict_mode: bool,
 }
 
 impl App {
-    fn new(title: String, backspace_active: bool) -> App {
+    fn new(
+        title: String,
+        time_goal: Option<i64>,
+        word_goal: Option<i64>,
+        backspace_active: bool,
+        strict_mode: bool,
+    ) -> App {
         App {
             title,
             text: String::default(),
             input_mode: InputMode::Title,
             backspace_active,
-            time_goal: None,
-            word_goal: None,
+            time_goal,
+            word_goal,
             start_time: Instant::now(),
+            strict_mode,
         }
     }
 
@@ -108,6 +117,43 @@ impl App {
                 }
             }
             None => Color::DarkGray,
+        }
+    }
+
+    fn achieved_goals(&self) -> bool {
+        let word_goal_achieved = match self.word_goal {
+            Some(i) => self.text.split_whitespace().count() as i64 >= i,
+            None => true,
+        };
+        let time_goal_achieved = match self.time_goal {
+            Some(i) => self.start_time.elapsed().as_secs() as i64 >= i,
+            None => true,
+        };
+        word_goal_achieved && time_goal_achieved
+    }
+
+    fn get_title(&self) -> Vec<Span> {
+        match self.input_mode {
+            InputMode::Title => vec![
+                Span::raw("Press "),
+                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to exit, "),
+                Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to start the writing session."),
+            ],
+            InputMode::Writing => {
+                if self.strict_mode && !self.achieved_goals() {
+                    vec![Span::raw(
+                        "Keep writing until you achieve your writing goal! ",
+                    )]
+                } else {
+                    vec![
+                        Span::raw("Press "),
+                        Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                        Span::raw(" to stop writing"),
+                    ]
+                }
+            }
         }
     }
 }
@@ -157,26 +203,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(0) = word_goal {
         word_goal = None;
     }
+    let strict_mode = settings.get_bool("strict_mode").unwrap_or(true);
 
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new(title.to_string(), backspace_active);
-    app.time_goal = time_goal;
-    app.word_goal = word_goal;
+    let mut app = App::new(
+        title.to_string(),
+        time_goal,
+        word_goal,
+        backspace_active,
+        strict_mode,
+    );
     let res = run_app(&mut terminal, &mut app);
 
     // restore terminal
     disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
 
     if !app.text.is_empty() {
@@ -232,7 +279,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                             }
                         }
                         KeyCode::Esc => {
-                            app.input_mode = InputMode::Title;
+                            if app.achieved_goals() || !app.strict_mode {
+                                app.input_mode = InputMode::Title;
+                            }
                         }
                         _ => {}
                     },
@@ -257,28 +306,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         )
         .split(f.size());
 
-    let (msg, style) = match app.input_mode {
-        InputMode::Title => (
-            vec![
-                Span::raw("Press "),
-                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to exit, "),
-                Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to start writing."),
-            ],
-            Style::default().add_modifier(Modifier::RAPID_BLINK),
-        ),
-        InputMode::Writing => (
-            vec![
-                Span::raw("Press "),
-                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to stop writing"),
-            ],
-            Style::default(),
-        ),
-    };
-    let mut text = Text::from(Spans::from(msg));
-    text.patch_style(style);
+    let text = Text::from(Spans::from(app.get_title()));
     let help_message = Paragraph::new(text);
     f.render_widget(help_message, chunks[0]);
 
