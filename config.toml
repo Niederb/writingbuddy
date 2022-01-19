@@ -1,20 +1,25 @@
 # Filename and path in which to store the written text
+# Check here for a list of specifiers you can use in the string:
+# https://docs.rs/chrono/latest/chrono/format/strftime/index.html
 # Default: "%Y-%m.md"
 file_string = "%Y-%m.md"
 
 # Default title to propose for a new text
+# Check here for a list of specifiers you can use in the string:
+# https://docs.rs/chrono/latest/chrono/format/strftime/index.html
 # Default: "%Y-%m-%d"
 title_string = "%Y-%m-%d"
 
-# Whether or not the backspace key is enabled while writing
+# Whether or not the backspace key is enabled while writing.
+# This is meant to help you continue writing without losing focus because you start correcting your text.
 # Default: true
 backspace_active = true
 
-# How many words you want to write
+# How many words you want to write. 0 means no word count goal.
 # Default: 0
 goal_words = 75
 
-# Amount of time in seconds you want to spend writing
+# Amount of time in seconds you want to spend writing. 0 means no time goal.
 # Default: 0
 goal_time = 60
 
