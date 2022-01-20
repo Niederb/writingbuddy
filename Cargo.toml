@@ -1,9 +1,8 @@
 [package]
 name = "writingbuddy"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Thomas Niederberger <thomas@niederb.ch>"]
 edition = "2021"
-
 license = "MIT OR Apache-2.0"
 
 description = "A tool to help you create a writing habit"
@@ -12,8 +11,6 @@ homepage = "https://github.com/niederb/writingbuddy"
 repository = "https://github.com/niederb/writingbuddy"
 keywords = ["cli", "tool", "writing", "text"]
 categories = ["command-line-utilities"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 chrono = "0.4"
