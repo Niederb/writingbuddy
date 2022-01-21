@@ -164,6 +164,24 @@ impl App {
             }
         }
     }
+
+    fn get_widget_colors(&self) -> (Color, Color) {
+        match self.input_mode {
+            InputMode::Title => (Color::Yellow, Color::DarkGray),
+            InputMode::Writing => match (self.keystroke_timeout, self.last_keystroke) {
+                (Some(timeout), Some(last_keystroke)) => {
+                    if last_keystroke.elapsed().as_secs_f32() > 0.8 * timeout as f32 {
+                        (Color::DarkGray, Color::Red)
+                    } else if last_keystroke.elapsed().as_secs_f32() > 0.5 * timeout as f32 {
+                        (Color::DarkGray, Color::LightRed)
+                    } else {
+                        (Color::DarkGray, Color::Yellow)
+                    }
+                }
+                _ => (Color::DarkGray, Color::Yellow),
+            },
+        }
+    }
 }
 
 fn get_text_position(text: &str) -> (u16, u16) {
@@ -304,13 +322,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                 }
             }
         }
-        if let Some(last_keystroke) = app.last_keystroke {
-            if let Some(keystroke_timeout) = app.keystroke_timeout {
-                if last_keystroke.elapsed().as_secs() > keystroke_timeout as u64 {
-                    app.text.clear();
-                }
+        if let (Some(keystroke_timeout), Some(last_keystroke)) =
+            (app.keystroke_timeout, app.last_keystroke)
+        {
+            if last_keystroke.elapsed().as_secs() > keystroke_timeout as u64 {
+                app.last_keystroke = None;
+                app.text.clear();
             }
-        }
+        };
     }
 }
 
@@ -333,10 +352,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let help_message = Paragraph::new(text);
     f.render_widget(help_message, chunks[0]);
 
-    let widget_colors = match app.input_mode {
-        InputMode::Title => (Color::Yellow, Color::DarkGray),
-        InputMode::Writing => (Color::DarkGray, Color::Yellow),
-    };
+    let widget_colors = app.get_widget_colors();
 
     let title = Paragraph::new(app.title.clone())
         .style(Style::default().fg(widget_colors.0))
