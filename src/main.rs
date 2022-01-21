@@ -107,7 +107,7 @@ impl App {
                 if duration as i64 >= i {
                     Color::Green
                 } else {
-                    Color::Yellow
+                    Color::Blue
                 }
             }
             None => Color::DarkGray,
@@ -167,18 +167,18 @@ impl App {
 
     fn get_widget_colors(&self) -> (Color, Color) {
         match self.input_mode {
-            InputMode::Title => (Color::Yellow, Color::DarkGray),
+            InputMode::Title => (Color::Blue, Color::DarkGray),
             InputMode::Writing => match (self.keystroke_timeout, self.last_keystroke) {
                 (Some(timeout), Some(last_keystroke)) => {
                     if last_keystroke.elapsed().as_secs_f32() > 0.8 * timeout as f32 {
                         (Color::DarkGray, Color::Red)
                     } else if last_keystroke.elapsed().as_secs_f32() > 0.5 * timeout as f32 {
-                        (Color::DarkGray, Color::LightRed)
-                    } else {
                         (Color::DarkGray, Color::Yellow)
+                    } else {
+                        (Color::DarkGray, Color::Blue)
                     }
                 }
-                _ => (Color::DarkGray, Color::Yellow),
+                _ => (Color::DarkGray, Color::Blue),
             },
         }
     }
@@ -314,6 +314,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         KeyCode::Esc => {
                             if app.achieved_goals() || !app.strict_mode {
                                 app.writing_time.stop();
+                                app.last_keystroke = None;
                                 app.input_mode = InputMode::Title;
                             }
                         }

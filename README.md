@@ -8,6 +8,7 @@ Simple command line tool to help you establish a daily writing habit.
 
 - Uses simple markdown files to store text
 - 'Strict mode' that does not let you leave before you reach your defined goals
+- A keystroke timer that forces you to keep on writing
 - Append text to existing markdown file
 - Define your own title and filename patterns
 - Option to disable backspace key in order to focus on writing
