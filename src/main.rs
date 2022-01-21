@@ -11,7 +11,7 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use stopwatch::Stopwatch;
 use structopt::StructOpt;
 use tui::{
@@ -55,6 +55,10 @@ struct App {
     word_goal: Option<i64>,
 
     strict_mode: bool,
+
+    last_keystroke: Option<Instant>,
+
+    keystroke_timeout: Option<i64>,
 }
 
 impl App {
@@ -64,6 +68,7 @@ impl App {
         word_goal: Option<i64>,
         backspace_active: bool,
         strict_mode: bool,
+        keystroke_timeout: Option<i64>,
     ) -> App {
         App {
             title,
@@ -74,6 +79,8 @@ impl App {
             word_goal,
             writing_time: Stopwatch::new(),
             strict_mode,
+            last_keystroke: None,
+            keystroke_timeout,
         }
     }
 
@@ -204,6 +211,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(0) = word_goal {
         word_goal = None;
     }
+    let mut keystroke_timeout = settings.get_int("keystroke_timeout").ok();
+    if let Some(0) = keystroke_timeout {
+        keystroke_timeout = None;
+    }
     let strict_mode = settings.get_bool("strict_mode").unwrap_or(true);
 
     // setup terminal
@@ -219,6 +230,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         word_goal,
         backspace_active,
         strict_mode,
+        keystroke_timeout,
     );
     let res = run_app(&mut terminal, &mut app);
 
@@ -273,6 +285,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                     InputMode::Writing => match key.code {
                         KeyCode::Enter => app.text.push('\n'),
                         KeyCode::Char(c) => {
+                            app.last_keystroke = Some(Instant::now());
                             app.text.push(c);
                         }
                         KeyCode::Backspace => {
@@ -288,6 +301,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         }
                         _ => {}
                     },
+                }
+            }
+        }
+        if let Some(last_keystroke) = app.last_keystroke {
+            if let Some(keystroke_timeout) = app.keystroke_timeout {
+                if last_keystroke.elapsed().as_secs() > keystroke_timeout as u64 {
+                    app.text.clear();
                 }
             }
         }

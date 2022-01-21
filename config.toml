@@ -26,3 +26,8 @@ goal_time = 60
 # In strict mode you cannot stop writing until you reach your defined goals
 # Default: true
 strict_mode = true
+
+# If you don't type for `keystroke_timeout` seconds your text will be cleared.
+# Forces you to keep on typing. Set to 0 to disable.
+# Default: 0
+keystroke_timeout = 5
