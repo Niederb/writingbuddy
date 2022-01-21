@@ -304,6 +304,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
                         KeyCode::Enter => app.text.push('\n'),
                         KeyCode::Char(c) => {
                             app.last_keystroke = Some(Instant::now());
+                            if !app.writing_time.is_running() {
+                                app.writing_time.start();
+                            }
                             app.text.push(c);
                         }
                         KeyCode::Backspace => {
@@ -328,6 +331,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
         {
             if last_keystroke.elapsed().as_secs() > keystroke_timeout as u64 {
                 app.last_keystroke = None;
+                app.writing_time.reset();
                 app.text.clear();
             }
         };
