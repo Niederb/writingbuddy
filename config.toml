@@ -1,14 +1,14 @@
-# Filename and path in which to store the written text
-# Check here for a list of specifiers you can use in the string:
+# Filename and path to which to append the written text
+# See this link for a list of specifiers you can use in the string:
 # https://docs.rs/chrono/latest/chrono/format/strftime/index.html
 # Default: "%Y-%m.md"
 file_string = "%Y-%m.md"
 
 # Default title to propose for a new text
-# Check here for a list of specifiers you can use in the string:
+# See this link for a list of specifiers you can use in the string:
 # https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-# Default: "%Y-%m-%d"
-title_string = "%Y-%m-%d"
+# Default: "## %Y-%m-%d"
+title_string = "## %Y-%m-%d"
 
 # Whether or not the backspace key is enabled while writing.
 # This is meant to help you continue writing without losing focus because you start correcting your text.
@@ -23,7 +23,7 @@ goal_words = 75
 # Default: 0
 goal_time = 60
 
-# In strict mode you cannot stop writing until you reach your defined goals
+# In strict mode you cannot stop writing until you reach your defined goals.
 # Default: true
 strict_mode = true
 

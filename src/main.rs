@@ -265,7 +265,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .create(true)
             .open(&filename.to_string())
             .unwrap();
-        writeln!(output, "## {}", app.title)?;
+        writeln!(output, "{}", app.title)?;
         writeln!(output, "{}", app.text)?;
         writeln!(output)?;
     }
