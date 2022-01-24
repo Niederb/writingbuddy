@@ -28,6 +28,8 @@ use tui::{
 #[structopt(name = "basic")]
 struct CliConfig {
     /// Path to config file. Can be a JSON, TOML, YAML, HJSON or INI file.
+    /// If nothing is specified a file named "config" will be searched for.
+    /// If no config file is found default values will be used.
     #[structopt(short, long)]
     config_file: Option<String>,
 }
@@ -200,15 +202,17 @@ fn get_text_position(text: &str) -> (u16, u16) {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli_config = CliConfig::from_args();
-    let config_file = cli_config
-        .config_file
-        .unwrap_or_else(|| "config".to_string());
-    println!("Config file: {:#?}", config_file);
 
     let mut settings = Config::default();
-    if let Err(i) = settings.merge(config::File::with_name(&config_file)) {
-        println!("Failed loading config file {:?}!", i);
-        std::process::exit(1);
+
+    if let Some(config_file) = cli_config.config_file {
+        println!("Config file: {:#?}", config_file);
+        if let Err(i) = settings.merge(config::File::with_name(&config_file)) {
+            println!("Failed loading specified config file {:?}!", i);
+            std::process::exit(1);
+        }
+    } else if settings.merge(config::File::with_name("config")).is_err() {
+        println!("No config file found. Using default values");
     }
 
     let now = Utc::now();
