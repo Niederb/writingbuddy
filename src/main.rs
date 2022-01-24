@@ -218,7 +218,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let now = Utc::now();
     let title_format_str = settings
         .get_str("title_string")
-        .unwrap_or_else(|_| "%Y-%m-%d".to_string());
+        .unwrap_or_else(|_| "## %Y-%m-%d".to_string());
     let title = now.format(&title_format_str);
     let file_format_str = settings
         .get_str("file_string")
