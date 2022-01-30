@@ -145,11 +145,11 @@ impl App {
     fn get_title(&self) -> Vec<Span> {
         match self.input_mode {
             InputMode::Title => {
-                let and_safe = if self.has_text() { " and save" } else { "" };
+                let save_and = if self.has_text() { " save and" } else { "" };
                 vec![
                     Span::raw("Press "),
                     Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::raw(format!(" to exit{and_safe}. ")),
+                    Span::raw(format!(" to{save_and} exit. ")),
                     Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
                     Span::raw(" to start the writing session."),
                 ]
