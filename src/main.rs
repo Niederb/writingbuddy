@@ -144,13 +144,16 @@ impl App {
 
     fn get_title(&self) -> Vec<Span> {
         match self.input_mode {
-            InputMode::Title => vec![
-                Span::raw("Press "),
-                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to exit, "),
-                Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to start the writing session."),
-            ],
+            InputMode::Title => {
+                let and_safe = if self.has_text() { " and save" } else { "" };
+                vec![
+                    Span::raw("Press "),
+                    Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(format!(" to exit{and_safe}. ")),
+                    Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" to start the writing session."),
+                ]
+            }
             InputMode::Writing => {
                 if self.strict_mode && !self.achieved_goals() {
                     vec![Span::raw(
@@ -183,6 +186,10 @@ impl App {
                 _ => (Color::DarkGray, Color::Blue),
             },
         }
+    }
+
+    fn has_text(&self) -> bool {
+        !self.text.is_empty()
     }
 }
 
@@ -261,7 +268,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
 
-    if !app.text.is_empty() {
+    if app.has_text() {
         println!("Storing text into: {}", &filename);
         let mut output = OpenOptions::new()
             .write(true)
