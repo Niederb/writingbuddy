@@ -191,6 +191,34 @@ impl App {
     fn has_text(&self) -> bool {
         !self.text.is_empty()
     }
+
+    fn get_paragraph_text(&self, paragraph_rows: usize, paragraph_cols: usize) -> String {
+        let wrapped_text = textwrap::fill(&self.text, paragraph_cols);
+
+        let total_lines = wrapped_text.lines().count();
+        let mut final_text = String::default();
+        let skip = if total_lines > paragraph_rows {
+            total_lines - paragraph_rows
+        } else {
+            0
+        };
+        // let line_iterator = wrapped_text.lines().skip(skip);
+        for line in wrapped_text.lines() {
+            final_text = format!("{}{}\n", final_text, line);
+        }
+        final_text = final_text.trim_end_matches(char::is_whitespace).to_string();
+        let trailing_whitespace =
+            &self.text[self.text.trim_end_matches(char::is_whitespace).len()..];
+        if !trailing_whitespace.is_empty() {
+            // Trailing whitespace is discarded by
+            // `textwrap::wrap`. We reinsert it here. If multiple
+            // spaces are added, this can overflow the margins
+            // which look a bit odd. Handling this would require
+            // some more tinkering...
+            final_text = format!("{}{}", final_text, trailing_whitespace);
+        };
+        final_text
+    }
 }
 
 fn get_text_position(text: &str) -> (u16, u16) {
@@ -375,18 +403,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(title, chunks[1]);
 
-    let terminal_width = f.size().width as usize - 6;
-    let mut wrapped_text = textwrap::fill(&app.text, terminal_width);
+    let paragraph_cols = f.size().width as usize - 6; // subtract 6 for border
+    let paragraph_rows = chunks[2].height as usize - 2; // subtract 2 for border
 
-    let trailing_whitespace = &app.text[app.text.trim_end_matches(' ').len()..];
-    if !trailing_whitespace.is_empty() {
-        // Trailing whitespace is discarded by
-        // `textwrap::wrap`. We reinsert it here. If multiple
-        // spaces are added, this can overflow the margins
-        // which look a bit odd. Handling this would require
-        // some more tinkering...
-        wrapped_text = format!("{}{}", wrapped_text, trailing_whitespace);
-    }
+    let wrapped_text = app.get_paragraph_text(paragraph_rows, paragraph_cols);
+
     match app.input_mode {
         InputMode::Title => {
             f.set_cursor(
