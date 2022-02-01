@@ -197,13 +197,13 @@ impl App {
 
         let total_lines = wrapped_text.lines().count();
         let mut final_text = String::default();
-        let skip = if total_lines > paragraph_rows {
-            total_lines - paragraph_rows
+        let skip = if total_lines > paragraph_rows - 1 {
+            total_lines - paragraph_rows + 1
         } else {
             0
         };
-        // let line_iterator = wrapped_text.lines().skip(skip);
-        for line in wrapped_text.lines() {
+        let line_iterator = wrapped_text.lines().skip(skip);
+        for line in line_iterator {
             final_text = format!("{}{}\n", final_text, line);
         }
         final_text = final_text.trim_end_matches(char::is_whitespace).to_string();
