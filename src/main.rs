@@ -154,9 +154,12 @@ impl App {
                 let save_and = if self.has_text() { " save and" } else { "" };
                 vec![
                     Span::raw("Press "),
-                    Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("[Esc]", Style::default().add_modifier(Modifier::BOLD)),
                     Span::raw(format!(" to{save_and} exit. ")),
-                    Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Press [Enter]",
+                        Style::default().add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(" to start the writing session."),
                 ]
             }
