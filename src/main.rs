@@ -197,7 +197,7 @@ impl App {
 
         let total_lines = wrapped_text.lines().count();
         let mut final_text = String::default();
-        let skip = if total_lines > paragraph_rows - 1 {
+        let skip = if total_lines > max(1, paragraph_rows) - 1 {
             total_lines - paragraph_rows + 1
         } else {
             0
@@ -403,8 +403,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .block(Block::default().borders(Borders::ALL).title("Title"));
     f.render_widget(title, chunks[1]);
 
-    let paragraph_cols = f.size().width as usize - 6; // subtract 6 for border
-    let paragraph_rows = chunks[2].height as usize - 2; // subtract 2 for border
+    let paragraph_cols = max(6, f.size().width as usize) - 6; // subtract 6 for border
+    let paragraph_rows = max(2, chunks[2].height as usize) - 2; // subtract 2 for border
 
     let wrapped_text = app.get_paragraph_text(paragraph_rows, paragraph_cols);
 
