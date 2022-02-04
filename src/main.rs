@@ -391,7 +391,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .margin(2)
         .constraints(
             [
-                Constraint::Length(1),
+                Constraint::Length(3),
                 Constraint::Length(3),
                 Constraint::Min(1),
                 Constraint::Length(3),
@@ -401,7 +401,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(f.size());
 
     let text = Text::from(Spans::from(app.get_title()));
-    let help_message = Paragraph::new(text);
+    let help_message = Paragraph::new(text)
+        .style(Style::default().fg(PASSIVE_COLOR))
+        .block(Block::default().borders(Borders::ALL).title("Instructions"));
     f.render_widget(help_message, chunks[0]);
 
     let widget_colors = app.get_widget_colors();
