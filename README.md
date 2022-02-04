@@ -15,19 +15,4 @@ Simple command line tool to help you establish a daily writing habit.
 - Define a goal of how many words you want to write
 - Define a goal of how long you want to write
 
-```
-  ┌Title─────────────────────────────────────────────────────────┐
-  │2022-01-19                                                    │
-  └──────────────────────────────────────────────────────────────┘
-  ┌Text──────────────────────────────────────────────────────────┐
-  │Hello World.                                                  │
-  │                                                              │
-  │                                                              │
-  │                                                              │
-  │                                                              │
-  └──────────────────────────────────────────────────────────────┘
-  ┌Word count────────────────────┐┌Time──────────────────────────┐
-  │2/10                          ││270 s                         │
-  └──────────────────────────────┘└──────────────────────────────┘
-
-```
+![Screenshot of command line interface](screenshot.png)

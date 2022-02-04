@@ -23,6 +23,12 @@ use tui::{
     Frame, Terminal,
 };
 
+const ACTIVE_COLOR: Color = Color::Cyan;
+const DONE_COLOR: Color = Color::Green;
+const WARNING_COLOR: Color = Color::Yellow;
+const DANGER_COLOR: Color = Color::Red;
+const PASSIVE_COLOR: Color = Color::Gray;
+
 /// A basic example
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -107,12 +113,12 @@ impl App {
         match self.time_goal {
             Some(i) => {
                 if duration as i64 >= i {
-                    Color::Green
+                    DONE_COLOR
                 } else {
-                    Color::Blue
+                    ACTIVE_COLOR
                 }
             }
-            None => Color::DarkGray,
+            None => PASSIVE_COLOR,
         }
     }
 
@@ -121,12 +127,12 @@ impl App {
         match self.word_goal {
             Some(i) => {
                 if word_count as i64 >= i {
-                    Color::Green
+                    DONE_COLOR
                 } else {
-                    Color::Yellow
+                    WARNING_COLOR
                 }
             }
-            None => Color::DarkGray,
+            None => PASSIVE_COLOR,
         }
     }
 
@@ -172,18 +178,18 @@ impl App {
 
     fn get_widget_colors(&self) -> (Color, Color) {
         match self.input_mode {
-            InputMode::Title => (Color::Blue, Color::DarkGray),
+            InputMode::Title => (ACTIVE_COLOR, PASSIVE_COLOR),
             InputMode::Writing => match (self.keystroke_timeout, self.last_keystroke) {
                 (Some(timeout), Some(last_keystroke)) => {
                     if last_keystroke.elapsed().as_secs_f32() > 0.8 * timeout as f32 {
-                        (Color::DarkGray, Color::Red)
+                        (PASSIVE_COLOR, DANGER_COLOR)
                     } else if last_keystroke.elapsed().as_secs_f32() > 0.5 * timeout as f32 {
-                        (Color::DarkGray, Color::Yellow)
+                        (PASSIVE_COLOR, WARNING_COLOR)
                     } else {
-                        (Color::DarkGray, Color::Blue)
+                        (PASSIVE_COLOR, ACTIVE_COLOR)
                     }
                 }
-                _ => (Color::DarkGray, Color::Blue),
+                _ => (PASSIVE_COLOR, ACTIVE_COLOR),
             },
         }
     }
@@ -304,7 +310,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             .create(true)
             .open(&filename.to_string())
             .unwrap();
-        writeln!(output, "{}", app.title)?;
+        if !app.title.is_empty() {
+            writeln!(output, "{}", app.title)?;
+        }
         writeln!(output, "{}", app.text)?;
         writeln!(output)?;
     }
