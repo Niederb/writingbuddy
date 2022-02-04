@@ -148,7 +148,7 @@ impl App {
         word_goal_achieved && time_goal_achieved
     }
 
-    fn get_title(&self) -> Vec<Span> {
+    fn get_instruction(&self) -> Vec<Span> {
         match self.input_mode {
             InputMode::Title => {
                 let save_and = if self.has_text() { " save and" } else { "" };
@@ -171,7 +171,7 @@ impl App {
                 } else {
                     vec![
                         Span::raw("Press "),
-                        Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                        Span::styled("[Esc]", Style::default().add_modifier(Modifier::BOLD)),
                         Span::raw(" to stop writing"),
                     ]
                 }
@@ -403,7 +403,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         )
         .split(f.size());
 
-    let text = Text::from(Spans::from(app.get_title()));
+    let text = Text::from(Spans::from(app.get_instruction()));
     let help_message = Paragraph::new(text)
         .style(Style::default().fg(PASSIVE_COLOR))
         .block(Block::default().borders(Borders::ALL).title("Instructions"));
