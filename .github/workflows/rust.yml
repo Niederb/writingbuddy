@@ -99,3 +99,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
+          name: code-coverage-report
+          path: target/debian/
+  
