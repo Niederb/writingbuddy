@@ -99,6 +99,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
-          name: code-coverage-report
+          
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: debian-package
           path: target/debian/
   
