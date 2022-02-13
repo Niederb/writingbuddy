@@ -244,6 +244,24 @@ fn get_text_position(text: &str) -> (u16, u16) {
     )
 }
 
+fn create_default_config() -> bool {
+    if let Some(config_dir) = dirs::config_dir() {
+        let config_directory = config_dir.join("writingbuddy/");
+        if std::fs::create_dir_all(&config_directory).is_ok() {
+            let config_file = config_directory.join("config.toml");
+            let config_contents = include_str!("../default_config.toml");
+            println!(
+                "Writing default config to: {}",
+                config_file.to_str().unwrap()
+            );
+            if std::fs::write(config_file, config_contents).is_ok() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let cli_config = CliConfig::from_args();
 
@@ -256,7 +274,30 @@ fn main() -> Result<(), Box<dyn Error>> {
             std::process::exit(1);
         }
     } else if settings.merge(config::File::with_name("config")).is_err() {
-        println!("No config file found. Using default values");
+        println!("No config file in current directory found.");
+        if let Some(config_dir) = dirs::config_dir() {
+            let config_file = config_dir
+                .join("writingbuddy/config")
+                .to_str()
+                .unwrap()
+                .to_string();
+            settings = Config::default();
+            if settings
+                .merge(config::File::with_name(&config_file))
+                .is_err()
+            {
+                println!(
+                    "Failed loading config file {:?}! Creating a default config.",
+                    config_file
+                );
+                if create_default_config() {
+                    settings = Config::default();
+                    settings
+                        .merge(config::File::with_name(&config_file))
+                        .unwrap();
+                }
+            }
+        }
     }
 
     let now = Utc::now();
