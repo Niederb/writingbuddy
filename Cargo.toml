@@ -21,13 +21,3 @@ textwrap = "0.14"
 structopt = "0.3"
 stopwatch = "0.0"
 dirs = "4.0.0"
-
-[package.metadata.deb]
-conf-files = [
-    "/etc/writingbuddy/config.toml"
-]
-assets = [
-    ["target/release/writingbuddy", "/usr/bin/writingbuddy", "755"],
-    ["config.toml", "/etc/writingbuddy/config.toml", "644"],
-    ["README.md", "/usr/share/doc/writingbuddy/README.md", "644"]
-]
