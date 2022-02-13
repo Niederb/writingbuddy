@@ -250,10 +250,7 @@ fn create_default_config() -> bool {
         if std::fs::create_dir_all(&config_directory).is_ok() {
             let config_file = config_directory.join("config.toml");
             let config_contents = include_str!("../default_config.toml");
-            println!(
-                "Writing default config to: {}",
-                config_file.to_str().unwrap()
-            );
+            println!("Writing default config to: {:?}", config_file);
             if std::fs::write(config_file, config_contents).is_ok() {
                 return true;
             }
@@ -292,9 +289,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 );
                 if create_default_config() {
                     settings = Config::default();
-                    settings
+                    if settings
                         .merge(config::File::with_name(&config_file))
-                        .unwrap();
+                        .is_err()
+                    {
+                        println!("Failed to read default config that should exist. Exit now");
+                        std::process::exit(1);
+                    }
                 }
             }
         }
