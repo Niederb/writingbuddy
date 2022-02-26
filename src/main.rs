@@ -11,6 +11,7 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
+use std::path::Path;
 use std::time::{Duration, Instant};
 use stopwatch::Stopwatch;
 use structopt::StructOpt;
@@ -34,10 +35,18 @@ const PASSIVE_COLOR: Color = Color::Gray;
 #[structopt(name = "basic")]
 struct CliConfig {
     /// Path to config file. Can be a JSON, TOML, YAML, HJSON or INI file.
-    /// If nothing is specified a file named "config" will be searched for.
+    /// If nothing is specified a file named `writingbuddy` will be searched for.
     /// If no config file is found default values will be used.
     #[structopt(short, long)]
     config_file: Option<String>,
+
+    /// Create a new config file named writingbuddy.json in case no config is found.
+    /// This can be used in combination with the `config_file` option in which case
+    /// the file will be created at the specified location if it does not exist.
+    /// It can also be used without `config_file` in which case a config file will be
+    /// created in the current directory if it does not exist.
+    #[structopt(short, long)]
+    initialize_config: bool,
 }
 
 enum InputMode {
@@ -247,14 +256,22 @@ fn get_text_position(text: &str) -> (u16, u16) {
 fn create_default_config() -> bool {
     if let Some(config_dir) = dirs::config_dir() {
         let config_directory = config_dir.join("writingbuddy/");
-        if std::fs::create_dir_all(&config_directory).is_ok() {
-            let config_file = config_directory.join("config.toml");
-            let config_contents = include_str!("../default_config.toml");
-            println!("Writing default config to: {:?}", config_file);
-            if std::fs::write(config_file, config_contents).is_ok() {
-                return true;
-            }
+        let config_file = config_directory.join("writingbuddy.toml");
+        return create_config_file(&config_file);
+    }
+    false
+}
+
+fn create_config_file(config_path: &Path) -> bool {
+    if let Some(directory) = config_path.parent() {
+        if std::fs::create_dir_all(&directory).is_err() {
+            return false;
         }
+    }
+    let config_contents = include_str!("../default_config.toml");
+    println!("Writing default config to: {:?}", config_path);
+    if std::fs::write(config_path, config_contents).is_ok() {
+        return true;
     }
     false
 }
@@ -267,12 +284,39 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(config_file) = cli_config.config_file {
         println!("Config file: {:#?}", config_file);
         if let Err(i) = settings.merge(config::File::with_name(&config_file)) {
-            println!("Failed loading specified config file {:?}!", i);
-            std::process::exit(1);
+            if cli_config.initialize_config {
+                if create_config_file(Path::new(&config_file)) {
+                    settings = Config::default();
+                    if settings
+                        .merge(config::File::with_name(&config_file))
+                        .is_err()
+                    {
+                        println!("Failed to read default config that should exist. Exit now");
+                        std::process::exit(1);
+                    }
+                }
+            } else {
+                println!("Failed loading specified config file {:?}!", i);
+                std::process::exit(1);
+            }
         }
-    } else if settings.merge(config::File::with_name("config")).is_err() {
+    } else if settings
+        .merge(config::File::with_name("writingbuddy"))
+        .is_err()
+    {
         println!("No config file in current directory found.");
-        if let Some(config_dir) = dirs::config_dir() {
+        if cli_config.initialize_config {
+            if create_config_file(Path::new("writingbuddy.toml")) {
+                settings = Config::default();
+                if settings
+                    .merge(config::File::with_name("writingbuddy.toml"))
+                    .is_err()
+                {
+                    println!("Failed to read default config that should exist. Exit now");
+                    std::process::exit(1);
+                }
+            }
+        } else if let Some(config_dir) = dirs::config_dir() {
             let config_file = config_dir
                 .join("writingbuddy/config")
                 .to_str()
