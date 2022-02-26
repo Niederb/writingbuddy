@@ -40,7 +40,7 @@ struct CliConfig {
     #[structopt(short, long)]
     config_file: Option<String>,
 
-    /// Create a new config file named writingbuddy.json in case no config is found.
+    /// Create a new config file named writingbuddy.toml in case no config is found.
     /// This can be used in combination with the `config_file` option in which case
     /// the file will be created at the specified location if it does not exist.
     /// It can also be used without `config_file` in which case a config file will be
@@ -279,79 +279,15 @@ fn create_config_file(config_path: &Path) -> bool {
 fn main() -> Result<(), Box<dyn Error>> {
     let cli_config = CliConfig::from_args();
 
-    let mut settings = Config::default();
-
-    if let Some(config_file) = cli_config.config_file {
-        println!("Config file: {:#?}", config_file);
-        if let Err(i) = settings.merge(config::File::with_name(&config_file)) {
-            if cli_config.initialize_config {
-                if create_config_file(Path::new(&config_file)) {
-                    settings = Config::default();
-                    if settings
-                        .merge(config::File::with_name(&config_file))
-                        .is_err()
-                    {
-                        println!("Failed to read default config that should exist. Exit now");
-                        std::process::exit(1);
-                    }
-                }
-            } else {
-                println!("Failed loading specified config file {:?}!", i);
-                std::process::exit(1);
-            }
-        }
-    } else if settings
-        .merge(config::File::with_name("writingbuddy"))
-        .is_err()
-    {
-        println!("No config file in current directory found.");
-        if cli_config.initialize_config {
-            if create_config_file(Path::new("writingbuddy.toml")) {
-                settings = Config::default();
-                if settings
-                    .merge(config::File::with_name("writingbuddy.toml"))
-                    .is_err()
-                {
-                    println!("Failed to read default config that should exist. Exit now");
-                    std::process::exit(1);
-                }
-            }
-        } else if let Some(config_dir) = dirs::config_dir() {
-            let config_file = config_dir
-                .join("writingbuddy/config")
-                .to_str()
-                .unwrap()
-                .to_string();
-            settings = Config::default();
-            if settings
-                .merge(config::File::with_name(&config_file))
-                .is_err()
-            {
-                println!(
-                    "Failed loading config file {:?}! Creating a default config.",
-                    config_file
-                );
-                if create_default_config() {
-                    settings = Config::default();
-                    if settings
-                        .merge(config::File::with_name(&config_file))
-                        .is_err()
-                    {
-                        println!("Failed to read default config that should exist. Exit now");
-                        std::process::exit(1);
-                    }
-                }
-            }
-        }
-    }
+    let settings = get_settings(cli_config);
 
     let now = Utc::now();
     let title_format_str = settings
-        .get_str("title_string")
+        .get_string("title_string")
         .unwrap_or_else(|_| "## %Y-%m-%d".to_string());
     let title = now.format(&title_format_str);
     let file_format_str = settings
-        .get_str("file_string")
+        .get_string("file_string")
         .unwrap_or_else(|_| "%Y-%m.md".to_string());
     let filename = now.format(&file_format_str);
     let backspace_active = settings.get_bool("backspace_active").unwrap_or(true);
@@ -411,6 +347,80 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn get_settings(cli_config: CliConfig) -> Config {
+    if let Some(config_file) = cli_config.config_file {
+        println!("Config file: {:#?}", config_file);
+        let config_builder = Config::builder().add_source(config::File::with_name(&config_file));
+        if let Ok(settings) = config_builder.build() {
+            return settings;
+        } else if cli_config.initialize_config {
+            if create_config_file(Path::new(&config_file)) {
+                let config_builder =
+                    Config::builder().add_source(config::File::with_name(&config_file));
+                if let Ok(settings) = config_builder.build() {
+                    return settings;
+                } else {
+                    println!("Failed to read config file that should exist. Exit now");
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            println!(
+                "Failed loading specified config file {:?}! But Why...",
+                config_file
+            );
+            std::process::exit(1);
+        }
+    } else {
+        let config_builder =
+            Config::builder().add_source(config::File::with_name("writingbuddy.toml"));
+        if let Ok(settings) = config_builder.build() {
+            return settings;
+        } else {
+            println!("No config file in current directory found.");
+            if cli_config.initialize_config {
+                if create_config_file(Path::new("writingbuddy.toml")) {
+                    let config_builder =
+                        Config::builder().add_source(config::File::with_name("writingbuddy.toml"));
+                    if let Ok(settings) = config_builder.build() {
+                        return settings;
+                    } else {
+                        println!("Failed to read config file that should exist. Exit now");
+                        std::process::exit(1);
+                    }
+                }
+            } else if let Some(config_dir) = dirs::config_dir() {
+                let config_file = config_dir
+                    .join("writingbuddy/writingbuddy")
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                let config_builder =
+                    Config::builder().add_source(config::File::with_name(&config_file));
+                if let Ok(settings) = config_builder.build() {
+                    return settings;
+                } else {
+                    println!(
+                        "Failed loading config file {:?}! Creating a default config.",
+                        config_file
+                    );
+                    if create_default_config() {
+                        let config_builder =
+                            Config::builder().add_source(config::File::with_name(&config_file));
+                        if let Ok(settings) = config_builder.build() {
+                            return settings;
+                        } else {
+                            println!("Failed to read config file that should exist. Exit now");
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Config::default()
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Result<()> {
