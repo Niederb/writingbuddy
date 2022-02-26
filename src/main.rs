@@ -30,9 +30,9 @@ const WARNING_COLOR: Color = Color::Yellow;
 const DANGER_COLOR: Color = Color::Red;
 const PASSIVE_COLOR: Color = Color::Gray;
 
-/// A basic example
+/// `writingbuddy` is a tool to support your writing without distractions
 #[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[structopt(name = "writingbuddy")]
 struct CliConfig {
     /// Path to config file. Can be a JSON, TOML, YAML, HJSON or INI file.
     /// If nothing is specified a file named `writingbuddy` will be searched for.
