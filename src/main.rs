@@ -351,11 +351,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn get_settings(cli_config: CliConfig) -> Config {
     if let Some(config_file) = cli_config.config_file {
-        println!("Config file: {:#?}", config_file);
+        println!("Trying to read specified config file: {:#?}", config_file);
         let config_builder = Config::builder().add_source(config::File::with_name(&config_file));
         if let Ok(settings) = config_builder.build() {
             return settings;
         } else if cli_config.initialize_config {
+            println!("Trying to create specified config file: {:#?}", config_file);
             if create_config_file(Path::new(&config_file)) {
                 let config_builder =
                     Config::builder().add_source(config::File::with_name(&config_file));
@@ -367,20 +368,18 @@ fn get_settings(cli_config: CliConfig) -> Config {
                 }
             }
         } else {
-            println!(
-                "Failed loading specified config file {:?}! But Why...",
-                config_file
-            );
+            println!("Failed loading specified config file {:?}!", config_file);
             std::process::exit(1);
         }
     } else {
-        let config_builder =
-            Config::builder().add_source(config::File::with_name("writingbuddy.toml"));
+        println!("Trying to read writingbuddy config file in current directory.");
+        let config_builder = Config::builder().add_source(config::File::with_name("writingbuddy"));
         if let Ok(settings) = config_builder.build() {
             return settings;
         } else {
             println!("No config file in current directory found.");
             if cli_config.initialize_config {
+                println!("Trying to create config file in current directory");
                 if create_config_file(Path::new("writingbuddy.toml")) {
                     let config_builder =
                         Config::builder().add_source(config::File::with_name("writingbuddy.toml"));
