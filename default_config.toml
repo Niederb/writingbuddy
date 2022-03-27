@@ -17,11 +17,11 @@ backspace_active = true
 
 # How many words you want to write. 0 means no word count goal.
 # Default: 0
-goal_words = 75
+goal_words = 0
 
 # Amount of time in seconds you want to spend writing. 0 means no time goal.
 # Default: 0
-goal_time = 60
+goal_time = 0
 
 # In strict mode you cannot stop writing until you reach your defined goals.
 # Default: true
@@ -30,4 +30,4 @@ strict_mode = true
 # If you don't type for `keystroke_timeout` seconds your text will be cleared.
 # Forces you to keep on typing. Set to 0 to disable.
 # Default: 0
-keystroke_timeout = 5
+keystroke_timeout = 0
