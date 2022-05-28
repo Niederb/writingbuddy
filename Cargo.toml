@@ -1,6 +1,6 @@
 [package]
 name = "writingbuddy"
-version = "0.14.1"
+version = "0.15.0"
 authors = ["Thomas Niederberger <thomas@niederb.ch>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -14,8 +14,8 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 chrono = "0.4"
-config = "0.12"
-tui = "0.17"
+config = "0.13"
+tui = "0.18"
 crossterm = "0.23"
 textwrap = "0.15"
 structopt = "0.3"
