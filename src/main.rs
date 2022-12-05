@@ -1,9 +1,5 @@
 use chrono::Utc;
 use config::Config;
-use std::fs::OpenOptions;
-use std::io;
-use std::io::Write;
-
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -11,6 +7,9 @@ use crossterm::{
 };
 use std::cmp::max;
 use std::error::Error;
+use std::fs::OpenOptions;
+use std::io;
+use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, Instant};
 use stopwatch::Stopwatch;
@@ -241,7 +240,7 @@ impl App {
 
 fn get_text_position(text: &str) -> (u16, u16) {
     let last_line = text.lines().last().unwrap_or_default();
-    let last_line_offset = if text.ends_with('\n') { 1 } else { 0 };
+    let last_line_offset = usize::from(text.ends_with('\n'));
     let line_position = if last_line_offset == 1 {
         0
     } else {
@@ -264,7 +263,7 @@ fn create_default_config() -> bool {
 
 fn create_config_file(config_path: &Path) -> bool {
     if let Some(directory) = config_path.parent() {
-        if std::fs::create_dir_all(&directory).is_err() {
+        if std::fs::create_dir_all(directory).is_err() {
             return false;
         }
     }
