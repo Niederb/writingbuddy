@@ -5,7 +5,9 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use fluent::{FluentBundle, FluentResource};
 use std::cmp::max;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::io;
@@ -22,6 +24,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
 };
+use unic_langid::LanguageIdentifier;
 
 const ACTIVE_COLOR: Color = Color::Cyan;
 const DONE_COLOR: Color = Color::Green;
@@ -275,8 +278,50 @@ fn create_config_file(config_path: &Path) -> bool {
     false
 }
 
+struct Translator {
+    bundle: FluentBundle<FluentResource>,
+}
+
+impl Translator {
+    pub fn new(bundle: FluentBundle<FluentResource>) -> Self {
+        Translator { bundle }
+    }
+
+    pub fn get_translated_message(&self, key: &str) -> String {
+        let msg = self
+            .bundle
+            .get_message(key)
+            .expect("Message doesn't exist.");
+        let mut errors = vec![];
+        let pattern = msg.value().expect("Message has no value.");
+        self.bundle
+            .format_pattern(&pattern, None, &mut errors)
+            .to_string()
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let cli_config = CliConfig::from_args();
+
+    let supported_languages = HashMap::from([
+        ("en-US", include_str!("../resources/en-US.fluent")),
+        ("de", include_str!("../resources/de.fluent")),
+    ]);
+    let language = "en-US";
+    let ftl_string = supported_languages[language];
+    let res =
+        FluentResource::try_new(ftl_string.to_string()).expect("Failed to parse an FTL string.");
+
+    let langid_en: LanguageIdentifier = language.parse().expect("Parsing failed");
+    let mut bundle = FluentBundle::new(vec![langid_en]);
+
+    bundle
+        .add_resource(res)
+        .expect("Failed to add FTL resources to the bundle.");
+
+    let t = Translator::new(bundle);
+    let value = t.get_translated_message("word-count");
+    println!("{}", &value);
 
     let settings = get_settings(cli_config);
 
@@ -319,7 +364,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         strict_mode,
         keystroke_timeout,
     );
-    let res = run_app(&mut terminal, &mut app);
+    let res = run_app(&mut terminal, &mut app, &t);
 
     // restore terminal
     disable_raw_mode()?;
@@ -421,9 +466,13 @@ fn get_settings(cli_config: CliConfig) -> Config {
     Config::default()
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Result<()> {
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: &mut App,
+    t: &Translator,
+) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| ui(f, app, t))?;
 
         if event::poll(Duration::from_millis(200))? {
             if let Event::Key(key) = event::read()? {
@@ -482,7 +531,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: &mut App) -> io::Res
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
+fn ui<B: Backend>(f: &mut Frame<B>, app: &App, t: &Translator) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
@@ -507,7 +556,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let title = Paragraph::new(app.title.clone())
         .style(Style::default().fg(widget_colors.0))
-        .block(Block::default().borders(Borders::ALL).title("Title"));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(t.get_translated_message("title")),
+        );
     f.render_widget(title, chunks[1]);
 
     let paragraph_cols = max(6, f.size().width as usize) - 6; // subtract 6 for border
@@ -537,7 +590,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let text = Paragraph::new(wrapped_text)
         .style(Style::default().fg(widget_colors.1))
-        .block(Block::default().borders(Borders::ALL).title("Text"));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(t.get_translated_message("text")),
+        );
     f.render_widget(text, chunks[2]);
 
     let stat_chunks = Layout::default()
@@ -547,13 +604,21 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     {
         let stats = Paragraph::new(app.get_word_count_string())
             .style(Style::default().fg(app.get_word_count_color()))
-            .block(Block::default().borders(Borders::ALL).title("Word count"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(t.get_translated_message("word-count")),
+            )
             .wrap(Wrap { trim: true });
         f.render_widget(stats, stat_chunks[0]);
 
         let stats = Paragraph::new(app.get_time_string())
             .style(Style::default().fg(app.get_time_color()))
-            .block(Block::default().borders(Borders::ALL).title("Time"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(t.get_translated_message("time")),
+            )
             .wrap(Wrap { trim: true });
         f.render_widget(stats, stat_chunks[1]);
     }
