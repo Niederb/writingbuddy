@@ -21,5 +21,6 @@ textwrap = "0.16"
 structopt = "0.3"
 stopwatch = "0.0"
 dirs = "5.0.0"
-unic-langid = "0.9.1"
+unic-langid = { version = "0.9.1", features = ["macros"] }
 fluent = "0.16.0"
+fluent-langneg = "0.13.0"

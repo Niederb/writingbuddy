@@ -6,6 +6,8 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use fluent::{FluentBundle, FluentResource};
+use fluent_langneg::negotiate_languages;
+use fluent_langneg::NegotiationStrategy;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::error::Error;
@@ -24,6 +26,8 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
 };
+use unic_langid::langid;
+use unic_langid::langids;
 use unic_langid::LanguageIdentifier;
 
 const ACTIVE_COLOR: Color = Color::Cyan;
@@ -307,13 +311,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         ("en-US", include_str!("../resources/en-US.fluent")),
         ("de", include_str!("../resources/de.fluent")),
     ]);
-    let language = "en-US";
-    let ftl_string = supported_languages[language];
+    let requested_language = langids!("de-CH");
+    let available_language = langids!("de", "en-US");
+    let default_language: LanguageIdentifier = langid!("en-US");
+
+    let selected_language = negotiate_languages(
+        &requested_language,
+        &available_language,
+        Some(&default_language),
+        NegotiationStrategy::Filtering,
+    )[0];
+    println!("{:?}", selected_language);
+    let ftl_string = supported_languages[&selected_language.to_string() as &str];
     let res =
         FluentResource::try_new(ftl_string.to_string()).expect("Failed to parse an FTL string.");
 
-    let langid_en: LanguageIdentifier = language.parse().expect("Parsing failed");
-    let mut bundle = FluentBundle::new(vec![langid_en]);
+    let mut bundle = FluentBundle::new(vec![selected_language.clone()]);
 
     bundle
         .add_resource(res)
