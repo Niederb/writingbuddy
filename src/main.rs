@@ -1,3 +1,4 @@
+use benchmark_counters::StopWatch;
 use chrono::Utc;
 use config::Config;
 use crossterm::{
@@ -12,7 +13,6 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, Instant};
-use stopwatch::Stopwatch;
 use structopt::StructOpt;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -64,7 +64,7 @@ struct App {
     /// Whether the backspace key works while writing
     backspace_active: bool,
 
-    writing_time: Stopwatch,
+    writing_time: StopWatch,
 
     time_goal: Option<i64>,
 
@@ -93,7 +93,7 @@ impl App {
             backspace_active,
             time_goal,
             word_goal,
-            writing_time: Stopwatch::new(),
+            writing_time: StopWatch::new(),
             strict_mode,
             last_keystroke: None,
             keystroke_timeout,

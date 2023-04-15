@@ -19,5 +19,6 @@ tui = "0.19"
 crossterm = "0.26"
 textwrap = "0.16"
 structopt = "0.3"
-stopwatch = "0.0"
 dirs = "5.0.0"
+benchmark-counters = "0.2.0"
+
