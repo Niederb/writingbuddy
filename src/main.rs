@@ -332,7 +332,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .write(true)
             .append(true)
             .create(true)
-            .open(&filename.to_string())
+            .open(filename.to_string())
             .unwrap();
         if !app.title.is_empty() {
             writeln!(output, "{}", app.title)?;
