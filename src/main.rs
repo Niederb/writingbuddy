@@ -21,7 +21,7 @@ use structopt::StructOpt;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Span, Spans, Text},
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
@@ -163,32 +163,24 @@ impl App {
         word_goal_achieved && time_goal_achieved
     }
 
-    fn get_instruction(&self) -> Vec<Span> {
+    fn get_instruction(&self, t: &Translator) -> Vec<Span> {
         match self.input_mode {
             InputMode::Title => {
-                let save_and = if self.has_text() { " save and" } else { "" };
+                let save_and = if self.has_text() {
+                    t.get_translated_message("exit-save")
+                } else {
+                    t.get_translated_message("exit-no-save")
+                };
                 vec![
-                    Span::raw("Press "),
-                    Span::styled("[Esc]", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::raw(format!(" to{save_and} exit. ")),
-                    Span::styled(
-                        "Press [Enter]",
-                        Style::default().add_modifier(Modifier::BOLD),
-                    ),
-                    Span::raw(" to start the writing session."),
+                    Span::raw(save_and),
+                    Span::raw(t.get_translated_message("start-writing")),
                 ]
             }
             InputMode::Writing => {
                 if self.strict_mode && !self.achieved_goals() {
-                    vec![Span::raw(
-                        "Keep writing until you achieve your writing goal! ",
-                    )]
+                    vec![Span::raw(t.get_translated_message("keep-writing"))]
                 } else {
-                    vec![
-                        Span::raw("Press "),
-                        Span::styled("[Esc]", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to stop writing"),
-                    ]
+                    vec![Span::raw(t.get_translated_message("stop-writing"))]
                 }
             }
         }
@@ -259,23 +251,27 @@ fn get_text_position(text: &str) -> (u16, u16) {
     )
 }
 
-fn create_default_config() -> bool {
+fn create_default_config(t: &Translator) -> bool {
     if let Some(config_dir) = dirs::config_dir() {
         let config_directory = config_dir.join("writingbuddy/");
         let config_file = config_directory.join("writingbuddy.toml");
-        return create_config_file(&config_file);
+        return create_config_file(&config_file, t);
     }
     false
 }
 
-fn create_config_file(config_path: &Path) -> bool {
+fn create_config_file(config_path: &Path, t: &Translator) -> bool {
     if let Some(directory) = config_path.parent() {
         if std::fs::create_dir_all(directory).is_err() {
             return false;
         }
     }
     let config_contents = include_str!("../default_config.toml");
-    println!("Writing default config to: {:?}", config_path);
+    println!(
+        "{}{:?}",
+        t.get_translated_message("writing-config"),
+        config_path
+    );
     if std::fs::write(config_path, config_contents).is_ok() {
         return true;
     }
@@ -295,7 +291,7 @@ impl Translator {
         let msg = self
             .bundle
             .get_message(key)
-            .expect("Message doesn't exist.");
+            .expect(&format!("Message doesn't exist: {}", key));
         let mut errors = vec![];
         let pattern = msg.value().expect("Message has no value.");
         self.bundle
@@ -336,7 +332,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let value = t.get_translated_message("word-count");
     println!("{}", &value);
 
-    let settings = get_settings(cli_config);
+    let settings = get_settings(cli_config, &t);
 
     let now = Utc::now();
     let title_format_str = settings
@@ -406,44 +402,52 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn get_settings(cli_config: CliConfig) -> Config {
+fn get_settings(cli_config: CliConfig, t: &Translator) -> Config {
     if let Some(config_file) = cli_config.config_file {
-        println!("Trying to read specified config file: {:#?}", config_file);
+        println!(
+            "{}{:#?}",
+            t.get_translated_message("read-specified-config"),
+            config_file
+        );
         let config_builder = Config::builder().add_source(config::File::with_name(&config_file));
         if let Ok(settings) = config_builder.build() {
             return settings;
         } else if cli_config.initialize_config {
-            println!("Trying to create specified config file: {:#?}", config_file);
-            if create_config_file(Path::new(&config_file)) {
+            println!(
+                "{}{:#?}",
+                t.get_translated_message("create-config"),
+                config_file
+            );
+            if create_config_file(Path::new(&config_file), t) {
                 let config_builder =
                     Config::builder().add_source(config::File::with_name(&config_file));
                 if let Ok(settings) = config_builder.build() {
                     return settings;
                 } else {
-                    println!("Failed to read config file that should exist. Exit now");
+                    println!("{}", t.get_translated_message("no-config-exit"));
                     std::process::exit(1);
                 }
             }
         } else {
-            println!("Failed loading specified config file {:?}!", config_file);
+            println!("{}{:?}", t.get_translated_message(""), config_file);
             std::process::exit(1);
         }
     } else {
-        println!("Trying to read writingbuddy config file in current directory.");
+        println!("{}", t.get_translated_message("no-config-current-dir"));
         let config_builder = Config::builder().add_source(config::File::with_name("writingbuddy"));
         if let Ok(settings) = config_builder.build() {
             return settings;
         } else {
-            println!("No config file in current directory found.");
+            println!("{}", t.get_translated_message("no-config-current-dir"));
             if cli_config.initialize_config {
-                println!("Trying to create config file in current directory");
-                if create_config_file(Path::new("writingbuddy.toml")) {
+                println!("{}", t.get_translated_message("create-config-current-dir"));
+                if create_config_file(Path::new("writingbuddy.toml"), t) {
                     let config_builder =
                         Config::builder().add_source(config::File::with_name("writingbuddy.toml"));
                     if let Ok(settings) = config_builder.build() {
                         return settings;
                     } else {
-                        println!("Failed to read config file that should exist. Exit now");
+                        println!("{}", t.get_translated_message("no-config-exit"));
                         std::process::exit(1);
                     }
                 }
@@ -459,16 +463,17 @@ fn get_settings(cli_config: CliConfig) -> Config {
                     return settings;
                 } else {
                     println!(
-                        "Failed loading config file {:?}! Creating a default config.",
+                        "{}{:?}",
+                        t.get_translated_message("create-default-because-error"),
                         config_file
                     );
-                    if create_default_config() {
+                    if create_default_config(t) {
                         let config_builder =
                             Config::builder().add_source(config::File::with_name(&config_file));
                         if let Ok(settings) = config_builder.build() {
                             return settings;
                         } else {
-                            println!("Failed to read config file that should exist. Exit now");
+                            println!("{}", t.get_translated_message("no-config-exit"));
                             std::process::exit(1);
                         }
                     }
@@ -559,10 +564,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App, t: &Translator) {
         )
         .split(f.size());
 
-    let text = Text::from(Spans::from(app.get_instruction()));
+    let text = Text::from(Spans::from(app.get_instruction(t)));
     let help_message = Paragraph::new(text)
         .style(Style::default().fg(PASSIVE_COLOR))
-        .block(Block::default().borders(Borders::ALL).title("Instructions"));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(t.get_translated_message("instructions")),
+        );
     f.render_widget(help_message, chunks[0]);
 
     let widget_colors = app.get_widget_colors();
