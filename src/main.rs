@@ -70,6 +70,8 @@ struct App {
 
     word_goal: Option<i64>,
 
+    character_goal: Option<i64>,
+
     strict_mode: bool,
 
     last_keystroke: Option<Instant>,
@@ -82,6 +84,7 @@ impl App {
         title: String,
         time_goal: Option<i64>,
         word_goal: Option<i64>,
+        character_goal: Option<i64>,
         backspace_active: bool,
         strict_mode: bool,
         keystroke_timeout: Option<i64>,
@@ -93,6 +96,7 @@ impl App {
             backspace_active,
             time_goal,
             word_goal,
+            character_goal,
             writing_time: StopWatch::new(),
             strict_mode,
             last_keystroke: None,
@@ -105,6 +109,14 @@ impl App {
         match self.word_goal {
             Some(word_goal) => format!("{word_count}/{word_goal}"),
             None => format!("{word_count}"),
+        }
+    }
+
+    fn get_character_count_string(&self) -> String {
+        let character_count = self.text.chars().count();
+        match self.character_goal {
+            Some(character_goal) => format!("{character_count}/{character_goal}"),
+            None => format!("{character_count}"),
         }
     }
 
@@ -135,6 +147,20 @@ impl App {
         match self.word_goal {
             Some(i) => {
                 if word_count as i64 >= i {
+                    DONE_COLOR
+                } else {
+                    WARNING_COLOR
+                }
+            }
+            None => PASSIVE_COLOR,
+        }
+    }
+
+    fn get_character_count_color(&self) -> Color {
+        let character_count = self.text.chars().count();
+        match self.character_goal {
+            Some(i) => {
+                if character_count as i64 >= i {
                     DONE_COLOR
                 } else {
                     WARNING_COLOR
@@ -298,6 +324,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(0) = word_goal {
         word_goal = None;
     }
+    let mut character_goal = settings.get_int("character_goal").ok();
+    if let Some(0) = character_goal {
+        character_goal = None;
+    }
     let mut keystroke_timeout = settings.get_int("keystroke_timeout").ok();
     if let Some(0) = keystroke_timeout {
         keystroke_timeout = None;
@@ -315,6 +345,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         title.to_string(),
         time_goal,
         word_goal,
+        character_goal,
         backspace_active,
         strict_mode,
         keystroke_timeout,
@@ -542,7 +573,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let stat_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .constraints(
+            [
+                Constraint::Percentage(34),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+            ]
+            .as_ref(),
+        )
         .split(chunks[3]);
     {
         let stats = Paragraph::new(app.get_word_count_string())
@@ -551,10 +589,20 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             .wrap(Wrap { trim: true });
         f.render_widget(stats, stat_chunks[0]);
 
+        let stats = Paragraph::new(app.get_character_count_string())
+            .style(Style::default().fg(app.get_character_count_color()))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Character count"),
+            )
+            .wrap(Wrap { trim: true });
+        f.render_widget(stats, stat_chunks[1]);
+
         let stats = Paragraph::new(app.get_time_string())
             .style(Style::default().fg(app.get_time_color()))
             .block(Block::default().borders(Borders::ALL).title("Time"))
             .wrap(Wrap { trim: true });
-        f.render_widget(stats, stat_chunks[1]);
+        f.render_widget(stats, stat_chunks[2]);
     }
 }

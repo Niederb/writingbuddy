@@ -19,6 +19,10 @@ backspace_active = true
 # Default: 0
 goal_words = 0
 
+# How many characters you want to write. 0 means no character count goal.
+# Default: 0
+goal_words = 0
+
 # Amount of time in seconds you want to spend writing. 0 means no time goal.
 # Default: 0
 goal_time = 0
